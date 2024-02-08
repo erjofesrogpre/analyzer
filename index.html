@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Analyzer</title>
+    <link rel="stylesheet" href="{{url_for('static',filename='css/style.css')}}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200&display=swap" rel="stylesheet">
+</head>
+<body>
+    <form id="textForm">
+        <div class="set">
+            <label class="instruction" for="textContent">Enter your text:</label><br>
+            <div class="fondo-instruccion"> 
+                <textarea id="textContent" class="textContent" rows="5" cols="50"></textarea><br>
+            </div>
+            <div class="container">
+                <button class="boton" type="button" onclick="analyzeText()">Analyze</button>
+            </div>
+        </div>
+    </form>
+    <div id="results"></div>
+    <div id="downloadButtonContainer"></div>
+
+    <script>
+        function analyzeText() {
+            var textContent = document.getElementById("textContent").value;
+            
+            // Send the text content to the backend for analysis
+            fetch('/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content: textContent })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Display the results
+                document.getElementById("results").innerHTML = `
+                    <p>Amount of words: ${data.wordCount}</p>
+                    <p>Amount of paragraphs: ${data.paragraphCount}</p>
+                    <p>Amount of sentences: ${data.sentenceCount}</p>
+                    <p>Amount of vowels: ${data.vowelCount}, Amount of consonants: ${data.consonantCount}</p>
+                    <p>Amount of lowercases: ${data.lowercaseCount}, Amount of uppercases: ${data.uppercaseCount}</p>
+                    <p>Word Frequency: <pre>${data.wordFrequency}</pre></p>
+                `;
+                
+                // Show the download button
+                document.getElementById("downloadButtonContainer").innerHTML = `
+                    <a class="boton2" onclick="downloadResults()">Download it!</a>
+                `;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function downloadResults() {
+            var data = "Word Count,Paragraph Count,Sentence Count,Vowel Count,Consonant Count,Lowercase Count,Uppercase Count\n";
+            data += `${document.getElementById("results").querySelectorAll("p")[0].innerText.split(": ")[1]},`;
+            data += `${document.getElementById("results").querySelectorAll("p")[1].innerText.split(": ")[1]},`;
+            data += `${document.getElementById("results").querySelectorAll("p")[2].innerText.split(": ")[1]},`;
+            data += `${document.getElementById("results").querySelectorAll("p")[3].innerText.split(": ")[1].split(",")[0]},`;
+            data += `${document.getElementById("results").querySelectorAll("p")[3].innerText.split(": ")[2].split(",")[0]},`;
+            data += `${document.getElementById("results").querySelectorAll("p")[4].innerText.split(": ")[1].split(",")[0]},`;
+            data += `${document.getElementById("results").querySelectorAll("p")[4].innerText.split(": ")[2]}\n`;
+
+            var blob = new Blob([data], { type: 'text/csv' });
+            var url = window.URL.createObjectURL(blob);
+
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'text_analysis_results.csv';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
